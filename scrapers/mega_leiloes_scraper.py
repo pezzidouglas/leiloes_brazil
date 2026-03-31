@@ -1,131 +1,81 @@
-"""
-Scraper for megaleiloes.com.br.
-
-Mega Leilões exposes AJAX endpoints for filtering:
-  /ajax-sbcategorias, /ajax-states-by-category, /ajax-cidades
-
-Categories: Imóveis, Veículos, Bens de Consumo, Bens Industriais, Animais,
-Produtos Diversos.
-"""
-
-import logging
-
+"""Scraper for Mega Leiloes (megaleiloes.com.br)"""
 from scrapers.base_scraper import BaseScraper
 import config
 
-logger = logging.getLogger(__name__)
-
 
 class MegaLeiloesScraper(BaseScraper):
-    SOURCE_NAME = "mega_leiloes"
-    BASE_URL = "https://www.megaleiloes.com.br"
-    SEARCH_URL = f"{BASE_URL}/pesquisa"
+    CATEGORIES = ["imoveis", "veiculos", "bens-de-consumo", "bens-industriais", "animais", "produtos-diversos"]
 
-    CATEGORIES = [
-        "Imóveis",
-        "Veículos",
-        "Bens de Consumo",
-        "Bens Industriais",
-        "Animais",
-        "Produtos Diversos",
-    ]
+    def __init__(self):
+        super().__init__("mega_leiloes", "https://www.megaleiloes.com.br")
 
-    def scrape(self) -> list[dict]:
-        logger.info("Starting Mega Leilões scraper")
-        self.results = []
-
-        for page in range(1, config.MAX_PAGES + 1):
+    def scrape(self):
+        self.logger.info("Scraping Mega Leiloes...")
+        for category in self.CATEGORIES:
             try:
-                params = {"pagina": page}
-                resp = self._get(self.SEARCH_URL, params=params)
-                soup = self._soup(resp.text)
-                items = soup.select(
-                    "div.item-leilao, div.auction-item, div.card, "
-                    "div.leilao-card, li.auction-list-item"
-                )
+                self._scrape_category(category)
+            except Exception as e:
+                self.logger.error(f"Error scraping {category}: {e}")
 
+    def _scrape_category(self, category):
+        for page in range(1, config.MAX_PAGES_PER_SOURCE + 1):
+            url = f"{self.base_url}/pesquisa?categoria={category}&pagina={page}"
+            try:
+                response = self._fetch(url)
+                soup = self._parse_html(response.text)
+                items = soup.select(".leilao-item, .lot-card, .card-lote, article")
                 if not items:
-                    logger.info("No more items at page %d", page)
                     break
-
                 for item in items:
-                    auction = self._parse_item(item)
+                    auction = self._parse_item(item, category)
                     if auction:
                         self.results.append(auction)
+            except Exception as e:
+                self.logger.warning(f"Page {page} error: {e}")
+                break
 
-                logger.info("Page %d: found %d items", page, len(items))
-            except Exception:
-                logger.exception("Error scraping Mega Leilões page %d", page)
-                continue
-
-        logger.info("Mega Leilões scraper finished with %d items", len(self.results))
-        return self.results
-
-    def _parse_item(self, item) -> dict | None:
+    def _parse_item(self, item, category):
         try:
-            title_el = item.select_one(
-                "h3, h2, .titulo, .title, .card-title"
-            )
+            title_el = item.select_one("h3, h4, .titulo, .title, .card-title")
             title = title_el.get_text(strip=True) if title_el else None
             if not title:
                 return None
 
-            desc_el = item.select_one(".descricao, .description, p")
-            description = desc_el.get_text(strip=True) if desc_el else ""
+            price_el = item.select_one(".preco, .price, .valor, .lance")
+            price = self.parse_price(price_el.get_text()) if price_el else None
 
-            cat_el = item.select_one(
-                ".categoria, .category, .badge, .tag"
-            )
-            category = cat_el.get_text(strip=True) if cat_el else "Diversos"
+            location_el = item.select_one(".localizacao, .location, .endereco")
+            city, state = (None, None)
+            if location_el:
+                city, state = self.parse_location(location_el.get_text())
 
-            bid_el = item.select_one(
-                ".preco, .price, .valor, .lance-atual"
-            )
-            current_bid = self.parse_price(
-                bid_el.get_text(strip=True) if bid_el else None
-            )
-
-            min_el = item.select_one(".lance-minimo, .min-bid, .valor-minimo")
-            minimum_bid = self.parse_price(
-                min_el.get_text(strip=True) if min_el else None
-            )
-
-            date_el = item.select_one(".data, .date, .auction-date, time")
-            auction_date = self.parse_date(
-                date_el.get_text(strip=True) if date_el else None
-            )
-
-            loc_el = item.select_one(".local, .location, .cidade-estado")
-            city, state = self.parse_location(
-                loc_el.get_text(strip=True) if loc_el else None
-            )
-
-            type_el = item.select_one(".tipo, .auction-type, .modalidade")
-            auction_type = type_el.get_text(strip=True) if type_el else "Online"
+            date_el = item.select_one(".data, .date, time, .encerramento")
+            auction_date = self.parse_date(date_el.get_text()) if date_el else None
 
             link_el = item.select_one("a[href]")
-            source_url = ""
-            if link_el:
-                href = link_el.get("href", "")
-                source_url = href if href.startswith("http") else f"{self.BASE_URL}{href}"
+            source_url = link_el["href"] if link_el else None
+            if source_url and not source_url.startswith("http"):
+                source_url = self.base_url + source_url
 
             img_el = item.select_one("img[src]")
-            image_url = img_el.get("src", "") if img_el else ""
+            image_url = img_el.get("src") or img_el.get("data-src") if img_el else None
+
+            type_el = item.select_one(".tipo, .badge, .judicial")
+            auction_type = "Judicial" if (type_el and "judicial" in type_el.get_text().lower()) else "Extrajudicial"
 
             return {
                 "title": title,
-                "description": description,
-                "category": category,
-                "current_bid": current_bid,
-                "minimum_bid": minimum_bid,
+                "category": self.normalize_category(category.replace("-", "")),
+                "current_bid": price,
+                "minimum_bid": price,
                 "auction_date": auction_date,
                 "city": city,
                 "state": state,
                 "auction_type": auction_type,
-                "source": self.SOURCE_NAME,
+                "source": "Mega Leiloes",
                 "source_url": source_url,
                 "image_url": image_url,
             }
-        except Exception:
-            logger.exception("Error parsing Mega Leilões item")
+        except Exception as e:
+            self.logger.debug(f"Parse error: {e}")
             return None

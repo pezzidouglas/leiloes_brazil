@@ -1,75 +1,66 @@
-"""
-Main orchestrator – runs every enabled scraper, then the processing pipeline.
-"""
-
-import importlib
+"""Main orchestrator to run all scrapers and pipeline."""
 import logging
-
-import pandas as pd
+import time
+from datetime import datetime
 
 import config
 from pipeline import run_pipeline
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-)
-logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+logger = logging.getLogger("orchestrator")
+
+SCRAPER_MAP = {
+    "superbid": ("scrapers.superbid_scraper", "SuperbidScraper"),
+    "mega_leiloes": ("scrapers.mega_leiloes_scraper", "MegaLeiloesScraper"),
+    "zuk": ("scrapers.zuk_scraper", "ZukScraper"),
+    "leiloes_brasil": ("scrapers.leiloes_brasil_scraper", "LeiloesBrasilScraper"),
+    "sodre_santoro": ("scrapers.sodre_santoro_scraper", "SodreSantoroScraper"),
+    "leilao_vip": ("scrapers.leilao_vip_scraper", "LeilaoVipScraper"),
+}
 
 
-def run_all_scrapers() -> dict[str, int]:
-    """Import and run each enabled scraper, returning item counts per source."""
-    stats: dict[str, int] = {}
-
-    for module_path, class_name in config.ENABLED_SCRAPERS:
+def run_all_scrapers():
+    logger.info(f"Starting scraper run at {datetime.now().isoformat()}")
+    logger.info(f"Enabled scrapers: {config.ENABLED_SCRAPERS}")
+    results_summary = {}
+    for scraper_name in config.ENABLED_SCRAPERS:
+        if scraper_name not in SCRAPER_MAP:
+            logger.warning(f"Unknown scraper: {scraper_name}")
+            continue
+        module_path, class_name = SCRAPER_MAP[scraper_name]
+        logger.info(f"\n{'='*50}")
+        logger.info(f"Running: {scraper_name}")
+        logger.info(f"{'='*50}")
         try:
-            logger.info("Running %s.%s …", module_path, class_name)
+            import importlib
             module = importlib.import_module(module_path)
-            scraper_cls = getattr(module, class_name)
-            scraper = scraper_cls()
-            items = scraper.scrape()
-            scraper.save_raw(items)
-            stats[scraper.SOURCE_NAME] = len(items)
-            logger.info("%s: %d items scraped", scraper.SOURCE_NAME, len(items))
-        except Exception:
-            logger.exception("Scraper %s.%s failed – continuing", module_path, class_name)
-            stats[f"{module_path} (FAILED)"] = 0
-
-    return stats
-
-
-def print_summary(scraper_stats: dict[str, int], df: pd.DataFrame) -> None:
-    """Print a human-readable summary of the scraping run."""
-    print("\n" + "=" * 60)
-    print("  Leilões Brazil – Scraping Summary")
-    print("=" * 60)
-
-    total_scraped = sum(scraper_stats.values())
-    print(f"\n  Total items scraped : {total_scraped}")
-    print(f"  Items after pipeline: {len(df)}")
-
-    print("\n  Per source:")
-    for source, count in sorted(scraper_stats.items()):
-        print(f"    {source:30s} {count:>6d}")
-
-    if not df.empty and "category" in df.columns:
-        print("\n  Per category:")
-        for cat, count in df["category"].value_counts().items():
-            print(f"    {cat:30s} {count:>6d}")
-
-    print("\n" + "=" * 60 + "\n")
-
-
-def main() -> None:
-    logger.info("Starting scraping run")
-
-    scraper_stats = run_all_scrapers()
-
-    logger.info("Running processing pipeline")
-    df = run_pipeline()
-
-    print_summary(scraper_stats, df)
+            scraper_class = getattr(module, class_name)
+            scraper = scraper_class()
+            results = scraper.run()
+            results_summary[scraper_name] = len(results)
+            logger.info(f"{scraper_name}: {len(results)} items collected")
+        except Exception as e:
+            logger.error(f"Failed to run {scraper_name}: {e}")
+            results_summary[scraper_name] = 0
+    # Run pipeline
+    logger.info(f"\n{'='*50}")
+    logger.info("Running data pipeline...")
+    logger.info(f"{'='*50}")
+    try:
+        run_pipeline()
+    except Exception as e:
+        logger.error(f"Pipeline error: {e}")
+    # Print final summary
+    logger.info(f"\n{'='*50}")
+    logger.info("FINAL SUMMARY")
+    logger.info(f"{'='*50}")
+    total = 0
+    for name, count in results_summary.items():
+        logger.info(f"  {name}: {count} items")
+        total += count
+    logger.info(f"  TOTAL: {total} items")
+    logger.info(f"Completed at {datetime.now().isoformat()}")
 
 
 if __name__ == "__main__":
-    main()
+    run_all_scrapers()
