@@ -14,6 +14,7 @@ from datetime import datetime, timezone
 import pandas as pd
 
 import config
+from scrapers.base_scraper import BaseScraper
 
 logger = logging.getLogger(__name__)
 
@@ -57,7 +58,6 @@ def clean_price(value) -> float | None:
     if isinstance(value, (int, float)):
         return float(value)
     if isinstance(value, str):
-        from scrapers.base_scraper import BaseScraper
         return BaseScraper.parse_price(value)
     return None
 
@@ -67,7 +67,6 @@ def parse_date_field(value) -> str | None:
     if value is None:
         return None
     if isinstance(value, str):
-        from scrapers.base_scraper import BaseScraper
         return BaseScraper.parse_date(value)
     return str(value)
 

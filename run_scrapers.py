@@ -4,7 +4,8 @@ Main orchestrator – runs every enabled scraper, then the processing pipeline.
 
 import importlib
 import logging
-import sys
+
+import pandas as pd
 
 import config
 from pipeline import run_pipeline
@@ -37,7 +38,7 @@ def run_all_scrapers() -> dict[str, int]:
     return stats
 
 
-def print_summary(scraper_stats: dict[str, int], df) -> None:
+def print_summary(scraper_stats: dict[str, int], df: pd.DataFrame) -> None:
     """Print a human-readable summary of the scraping run."""
     print("\n" + "=" * 60)
     print("  Leilões Brazil – Scraping Summary")

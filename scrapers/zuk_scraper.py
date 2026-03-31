@@ -4,6 +4,7 @@ real-estate auctions with discount percentages.
 """
 
 import logging
+import re
 
 from scrapers.base_scraper import BaseScraper
 import config
@@ -79,7 +80,6 @@ class ZukScraper(BaseScraper):
             discount_percentage = None
             if discount_el:
                 try:
-                    import re
                     pct_text = re.sub(r"[^\d,.]", "", discount_el.get_text(strip=True))
                     pct_text = pct_text.replace(",", ".")
                     discount_percentage = float(pct_text) if pct_text else None

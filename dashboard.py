@@ -286,8 +286,9 @@ def main() -> None:
             "source_url",
         ] if c in filtered.columns
     ]
+    sort_col = "auction_date" if "auction_date" in display_cols else display_cols[0]
     st.dataframe(
-        filtered[display_cols].sort_values("auction_date", ascending=True, na_position="last"),
+        filtered[display_cols].sort_values(sort_col, ascending=True, na_position="last"),
         use_container_width=True,
         height=400,
     )
