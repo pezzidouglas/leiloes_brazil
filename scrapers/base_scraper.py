@@ -72,9 +72,18 @@ class BaseScraper(ABC):
             options.add_argument("--window-size=1920,1080")
             options.add_argument(f"--user-agent={random.choice(config.USER_AGENTS)}")
             options.add_argument("--lang=pt-BR")
+            options.add_argument("--disable-extensions")
+            options.add_argument("--disable-blink-features=AutomationControlled")
+            options.add_experimental_option("excludeSwitches", ["enable-automation"])
+            options.add_experimental_option("useAutomationExtension", False)
 
-            service = Service(ChromeDriverManager().install())
-            self._driver = webdriver.Chrome(service=service, options=options)
+            try:
+                service = Service(ChromeDriverManager().install())
+                self._driver = webdriver.Chrome(service=service, options=options)
+            except Exception as e:
+                # Fall back to system chromedriver if webdriver-manager fails
+                self.logger.warning(f"webdriver-manager failed ({e}), falling back to system chromedriver")
+                self._driver = webdriver.Chrome(options=options)
             self._driver.set_page_load_timeout(config.REQUEST_TIMEOUT)
         return self._driver
 
@@ -115,7 +124,7 @@ class BaseScraper(ABC):
         if not price_str:
             return None
         price_str = str(price_str)
-        price_str = price_str.replace("R$", "").replace("R\$", "")
+        price_str = price_str.replace("R$", "")
         price_str = price_str.replace(".", "").replace(",", ".").strip()
         price_str = re.sub(r"[^\d.]", "", price_str)
         try:
