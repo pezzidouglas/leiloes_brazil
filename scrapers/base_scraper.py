@@ -10,7 +10,7 @@ from abc import ABC, abstractmethod
 from datetime import datetime
 from pathlib import Path
 
-import requests
+import cloudscraper
 from bs4 import BeautifulSoup
 from tenacity import retry, stop_after_attempt, wait_exponential
 
@@ -22,17 +22,22 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(level
 class BaseScraper(ABC):
     """Abstract base class for auction scrapers."""
 
+    # Subclasses can set this to True to use Selenium instead of cloudscraper
+    REQUIRES_SELENIUM = False
+
     def __init__(self, name, base_url):
         self.name = name
         self.base_url = base_url
         self.logger = logging.getLogger(name)
-        self.session = requests.Session()
+        self.session = cloudscraper.create_scraper(
+            browser={"browser": "chrome", "platform": "windows", "mobile": False},
+        )
         self.session.headers.update({
-            "User-Agent": random.choice(config.USER_AGENTS),
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
             "Accept-Language": "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7",
         })
         self.results = []
+        self._driver = None
 
     def _rate_limit(self):
         delay = config.REQUEST_DELAY + random.uniform(0, 1)
@@ -41,7 +46,6 @@ class BaseScraper(ABC):
     @retry(stop=stop_after_attempt(config.MAX_RETRIES), wait=wait_exponential(multiplier=1, min=2, max=10))
     def _fetch(self, url, params=None):
         self._rate_limit()
-        self.session.headers["User-Agent"] = random.choice(config.USER_AGENTS)
         self.logger.info(f"Fetching: {url}")
         response = self.session.get(url, params=params, timeout=config.REQUEST_TIMEOUT)
         response.raise_for_status()
@@ -49,6 +53,62 @@ class BaseScraper(ABC):
 
     def _parse_html(self, html_content):
         return BeautifulSoup(html_content, "lxml")
+
+    # --- Selenium helpers for JS-rendered sites ---
+
+    def _get_driver(self):
+        """Lazily create a Selenium WebDriver."""
+        if self._driver is None:
+            from selenium import webdriver
+            from selenium.webdriver.chrome.options import Options
+            from selenium.webdriver.chrome.service import Service
+            from webdriver_manager.chrome import ChromeDriverManager
+
+            options = Options()
+            options.add_argument("--headless=new")
+            options.add_argument("--no-sandbox")
+            options.add_argument("--disable-dev-shm-usage")
+            options.add_argument("--disable-gpu")
+            options.add_argument("--window-size=1920,1080")
+            options.add_argument(f"--user-agent={random.choice(config.USER_AGENTS)}")
+            options.add_argument("--lang=pt-BR")
+
+            service = Service(ChromeDriverManager().install())
+            self._driver = webdriver.Chrome(service=service, options=options)
+            self._driver.set_page_load_timeout(config.REQUEST_TIMEOUT)
+        return self._driver
+
+    def _fetch_with_selenium(self, url, wait_selector=None, wait_timeout=15):
+        """Fetch a page using Selenium, optionally waiting for a CSS selector."""
+        from selenium.webdriver.common.by import By
+        from selenium.webdriver.support.ui import WebDriverWait
+        from selenium.webdriver.support import expected_conditions as EC
+
+        self._rate_limit()
+        driver = self._get_driver()
+        self.logger.info(f"Fetching (Selenium): {url}")
+        driver.get(url)
+
+        if wait_selector:
+            try:
+                WebDriverWait(driver, wait_timeout).until(
+                    EC.presence_of_element_located((By.CSS_SELECTOR, wait_selector))
+                )
+            except Exception:
+                self.logger.warning(f"Timeout waiting for '{wait_selector}' on {url}")
+
+        return driver.page_source
+
+    def _close_driver(self):
+        """Close the Selenium WebDriver if open."""
+        if self._driver:
+            try:
+                self._driver.quit()
+            except Exception:
+                pass
+            self._driver = None
+
+    # --- Parsing helpers ---
 
     @staticmethod
     def parse_price(price_str):
@@ -68,6 +128,9 @@ class BaseScraper(ABC):
         if not date_str:
             return None
         date_str = str(date_str).strip()
+        # Remove common prefixes like "1a Praca: " or "2a Praca: "
+        date_str = re.sub(r"^\d+a?\s*Pra[cç]a\s*:\s*", "", date_str, flags=re.IGNORECASE)
+        date_str = date_str.replace(" as ", " ").replace(" às ", " ")
         formats = [
             "%d/%m/%Y %H:%M", "%d/%m/%Y %H:%M:%S", "%d/%m/%Y",
             "%Y-%m-%dT%H:%M:%S", "%Y-%m-%d", "%d de %B de %Y",
@@ -84,13 +147,16 @@ class BaseScraper(ABC):
     def parse_location(location_str):
         if not location_str:
             return None, None
-        parts = str(location_str).split("-")
-        if len(parts) >= 2:
-            city = parts[0].strip()
-            state = parts[-1].strip().upper()
-            if len(state) == 2:
-                return city, state
-        return location_str.strip(), None
+        text = str(location_str).strip()
+        # Try "City - ST" or "City/ST" or "City, ST"
+        for sep in [" - ", "/", ", "]:
+            parts = text.rsplit(sep, 1)
+            if len(parts) == 2:
+                city = parts[0].strip()
+                state = parts[1].strip().upper()
+                if len(state) == 2 and state.isalpha():
+                    return city, state
+        return text, None
 
     @staticmethod
     def normalize_category(category_str):
@@ -119,4 +185,6 @@ class BaseScraper(ABC):
             self.logger.info(f"Completed {self.name}: {len(self.results)} items")
         except Exception as e:
             self.logger.error(f"Error in {self.name}: {e}")
+        finally:
+            self._close_driver()
         return self.results
