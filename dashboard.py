@@ -7,12 +7,14 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
+import config
 
 st.set_page_config(page_title="Leiloes Brazil Dashboard", page_icon="🇧🇷", layout="wide")
 
 CATEGORIES = ["Imoveis", "Veiculos", "Maquinas", "Bens de Consumo", "Rural", "Diversos"]
 STATES = ["SP","RJ","MG","BA","PR","RS","SC","GO","PE","CE","PA","MA","MT","MS","DF","ES","PB","RN","AL","PI","SE","RO","TO","AC","AP","AM","RR"]
-SOURCES = ["Superbid", "Mega Leiloes", "Zuk", "Leiloes Brasil", "Sodre Santoro", "Leilao VIP"]
+SOURCES = ["Superbid", "Mega Leiloes", "Zuk", "Leiloes Brasil", "Sodre Santoro", "Leilao VIP",
+    "Leiloes Judiciais", "E-Leiloes", "Frazao Leiloes", "Sold", "Nucleo Leiloes", "Mapa do Leilao"]
 TYPES = ["Judicial", "Extrajudicial", "Venda Direta", "Corporativo"]
 CITIES = {"SP": ["Sao Paulo","Campinas","Santos","Ribeirao Preto","Sorocaba"],
     "RJ": ["Rio de Janeiro","Niteroi","Petropolis","Volta Redonda"],
@@ -61,7 +63,7 @@ def generate_demo_data(n=200):
 
 @st.cache_data(ttl=3600)
 def load_data():
-    data_path = Path("data/processed/all_auctions.json")
+    data_path = config.PROCESSED_DIR / config.COMBINED_OUTPUT_FILE
     if data_path.exists():
         try:
             df = pd.read_json(data_path)
@@ -100,58 +102,62 @@ def main():
     # KPI Cards
     col1, col2, col3, col4 = st.columns(4)
     col1.metric("📦 Total Leiloes", f"{len(filtered):,}")
-    avg_discount = filtered["discount_percentage"].mean() if "discount_percentage" in filtered.columns else 0
-    col2.metric("💰 Desconto Medio", f"{avg_discount:.0f}%")
+    avg_discount = filtered["discount_percentage"].mean() if ("discount_percentage" in filtered.columns and len(filtered) > 0) else 0
+    col2.metric("💰 Desconto Medio", f"{avg_discount:.0f}%" if pd.notna(avg_discount) else "0%")
     if "auction_date" in filtered.columns:
-        week_mask = filtered["auction_date"] <= (datetime.now() + timedelta(days=7))
+        now = pd.Timestamp(datetime.now())
+        week_mask = (filtered["auction_date"] >= now) & (filtered["auction_date"] <= now + timedelta(days=7))
         col3.metric("📅 Esta Semana", f"{week_mask.sum():,}")
     else:
         col3.metric("📅 Esta Semana", "-")
     col4.metric("🌐 Fontes Ativas", f"{filtered['source'].nunique()}")
     st.divider()
 
-    # Charts Row
-    chart1, chart2 = st.columns(2)
-    with chart1:
-        st.subheader("Leiloes por Categoria")
-        cat_counts = filtered["category"].value_counts().reset_index()
-        cat_counts.columns = ["Categoria", "Quantidade"]
-        fig1 = px.bar(cat_counts, x="Categoria", y="Quantidade", color="Categoria", color_discrete_sequence=px.colors.qualitative.Set2)
-        fig1.update_layout(showlegend=False, height=350)
-        st.plotly_chart(fig1, use_container_width=True)
-    with chart2:
-        st.subheader("Leiloes por Estado (Top 10)")
-        state_counts = filtered["state"].value_counts().head(10).reset_index()
-        state_counts.columns = ["Estado", "Quantidade"]
-        fig2 = px.bar(state_counts, x="Estado", y="Quantidade", color="Quantidade", color_continuous_scale="Viridis")
-        fig2.update_layout(height=350)
-        st.plotly_chart(fig2, use_container_width=True)
+    if len(filtered) == 0:
+        st.warning("Nenhum leilao encontrado com os filtros selecionados. Ajuste os filtros na barra lateral.")
+    else:
+        # Charts Row
+        chart1, chart2 = st.columns(2)
+        with chart1:
+            st.subheader("Leiloes por Categoria")
+            cat_counts = filtered["category"].value_counts().reset_index()
+            cat_counts.columns = ["Categoria", "Quantidade"]
+            fig1 = px.bar(cat_counts, x="Categoria", y="Quantidade", color="Categoria", color_discrete_sequence=px.colors.qualitative.Set2)
+            fig1.update_layout(showlegend=False, height=350)
+            st.plotly_chart(fig1, use_container_width=True)
+        with chart2:
+            st.subheader("Leiloes por Estado (Top 10)")
+            state_counts = filtered["state"].value_counts().head(10).reset_index()
+            state_counts.columns = ["Estado", "Quantidade"]
+            fig2 = px.bar(state_counts, x="Estado", y="Quantidade", color="Quantidade", color_continuous_scale="Viridis")
+            fig2.update_layout(height=350)
+            st.plotly_chart(fig2, use_container_width=True)
 
-    chart3, chart4 = st.columns(2)
-    with chart3:
-        st.subheader("Tipos de Leilao")
-        type_counts = filtered["auction_type"].value_counts().reset_index()
-        type_counts.columns = ["Tipo", "Quantidade"]
-        fig3 = px.pie(type_counts, values="Quantidade", names="Tipo", color_discrete_sequence=px.colors.qualitative.Pastel)
-        fig3.update_layout(height=350)
-        st.plotly_chart(fig3, use_container_width=True)
-    with chart4:
-        st.subheader("Leiloes por Fonte")
-        src_counts = filtered["source"].value_counts().reset_index()
-        src_counts.columns = ["Fonte", "Quantidade"]
-        fig4 = px.bar(src_counts, x="Fonte", y="Quantidade", color="Fonte", color_discrete_sequence=px.colors.qualitative.Bold)
-        fig4.update_layout(showlegend=False, height=350)
-        st.plotly_chart(fig4, use_container_width=True)
+        chart3, chart4 = st.columns(2)
+        with chart3:
+            st.subheader("Tipos de Leilao")
+            type_counts = filtered["auction_type"].value_counts().reset_index()
+            type_counts.columns = ["Tipo", "Quantidade"]
+            fig3 = px.pie(type_counts, values="Quantidade", names="Tipo", color_discrete_sequence=px.colors.qualitative.Pastel)
+            fig3.update_layout(height=350)
+            st.plotly_chart(fig3, use_container_width=True)
+        with chart4:
+            st.subheader("Leiloes por Fonte")
+            src_counts = filtered["source"].value_counts().reset_index()
+            src_counts.columns = ["Fonte", "Quantidade"]
+            fig4 = px.bar(src_counts, x="Fonte", y="Quantidade", color="Fonte", color_discrete_sequence=px.colors.qualitative.Bold)
+            fig4.update_layout(showlegend=False, height=350)
+            st.plotly_chart(fig4, use_container_width=True)
 
-    # Data Table
-    st.divider()
-    st.subheader("📋 Lista de Leiloes")
-    display_cols = [c for c in ["title","category","current_bid","state","city","auction_type","auction_date","source","source_url"] if c in filtered.columns]
-    st.dataframe(filtered[display_cols].sort_values("auction_date", ascending=True, na_position="last"), use_container_width=True, height=400)
+        # Data Table
+        st.divider()
+        st.subheader("📋 Lista de Leiloes")
+        display_cols = [c for c in ["title","category","current_bid","state","city","auction_type","auction_date","source","source_url"] if c in filtered.columns]
+        st.dataframe(filtered[display_cols].sort_values("auction_date", ascending=True, na_position="last"), use_container_width=True, height=400)
 
-    # Export
-    csv = filtered.to_csv(index=False).encode("utf-8")
-    st.download_button("📥 Exportar CSV", csv, "leiloes_brazil_filtered.csv", "text/csv")
+        # Export
+        csv = filtered.to_csv(index=False).encode("utf-8")
+        st.download_button("📥 Exportar CSV", csv, "leiloes_brazil_filtered.csv", "text/csv")
     st.sidebar.markdown("---")
     st.sidebar.markdown("**Leiloes Brazil** v1.0")
     st.sidebar.markdown(f"Ultima atualizacao: {datetime.now().strftime('%d/%m/%Y %H:%M')}")
