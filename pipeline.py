@@ -39,6 +39,19 @@ def clean_prices(df):
     return df
 
 
+def compute_discounts(df):
+    if "current_bid" in df.columns and "minimum_bid" in df.columns:
+        has_both = df["current_bid"].notna() & df["minimum_bid"].notna() & (df["minimum_bid"] > 0)
+        if "discount_percentage" not in df.columns:
+            df["discount_percentage"] = None
+        df.loc[has_both & df["discount_percentage"].isna(), "discount_percentage"] = (
+            ((df["minimum_bid"] - df["current_bid"]) / df["minimum_bid"] * 100)
+            .clip(lower=0, upper=100)
+            .round(1)
+        )
+    return df
+
+
 def deduplicate(df):
     if "source_url" in df.columns:
         before = len(df)
@@ -57,6 +70,7 @@ def run_pipeline():
     df["scraped_at"] = datetime.now().isoformat()
     df = normalize_categories(df)
     df = clean_prices(df)
+    df = compute_discounts(df)
     df = deduplicate(df)
     # Save processed data
     output_json = config.PROCESSED_DIR / config.COMBINED_OUTPUT_FILE

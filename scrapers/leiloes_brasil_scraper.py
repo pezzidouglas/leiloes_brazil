@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 class LeiloesBrasilScraper(BaseScraper):
-    SOURCE_NAME = "leiloes_brasil"
+    SOURCE_NAME = "Leiloes Brasil"
     BASE_URL = "https://www.leiloesbrasil.com.br"
     SEARCH_URL = f"{BASE_URL}/leiloes"
 
