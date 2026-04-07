@@ -16,6 +16,12 @@ SCRAPER_MAP = {
     "leiloes_brasil": ("scrapers.leiloes_brasil_scraper", "LeiloesBrasilScraper"),
     "sodre_santoro": ("scrapers.sodre_santoro_scraper", "SodreSantoroScraper"),
     "leilao_vip": ("scrapers.leilao_vip_scraper", "LeilaoVipScraper"),
+    "leiloes_judiciais": ("scrapers.leiloes_judiciais_scraper", "LeiloesJudiciaisScraper"),
+    "e_leiloes": ("scrapers.e_leiloes_scraper", "ELeiloesScraper"),
+    "frazao_leiloes": ("scrapers.frazao_leiloes_scraper", "FrazaoLeiloesScraper"),
+    "sold": ("scrapers.sold_scraper", "SoldScraper"),
+    "nucleo_leiloes": ("scrapers.nucleo_leiloes_scraper", "NucleoLeiloesScraper"),
+    "mapa_do_leilao": ("scrapers.mapa_do_leilao_scraper", "MapaDoLeilaoScraper"),
 }
 
 

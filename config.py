@@ -23,7 +23,10 @@ USER_AGENTS = [
     "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36",
 ]
 
-ENABLED_SCRAPERS = ["superbid", "mega_leiloes", "zuk", "leiloes_brasil", "sodre_santoro", "leilao_vip"]
+ENABLED_SCRAPERS = [
+    "superbid", "mega_leiloes", "zuk", "leiloes_brasil", "sodre_santoro", "leilao_vip",
+    "leiloes_judiciais", "e_leiloes", "frazao_leiloes", "sold", "nucleo_leiloes", "mapa_do_leilao",
+]
 
 CATEGORY_MAP = {
     "imoveis": "Imoveis", "imovel": "Imoveis", "apartamentos": "Imoveis",
@@ -37,6 +40,10 @@ CATEGORY_MAP = {
     "moveis": "Bens de Consumo", "consumer": "Bens de Consumo",
     "animais": "Rural", "cavalos": "Rural", "gado": "Rural", "rural": "Rural",
     "diversos": "Diversos", "materiais": "Diversos", "sucatas": "Diversos",
+    "outros": "Diversos", "agro": "Rural", "tecnologia": "Bens de Consumo",
+    "industrial": "Maquinas", "caminhoesonibus": "Veiculos", "carrosmotos": "Veiculos",
+    "maquinaspesadas": "Maquinas", "residencial": "Imoveis", "comercial": "Imoveis",
+    "terreno": "Imoveis",
 }
 
 BRAZILIAN_STATES = [
