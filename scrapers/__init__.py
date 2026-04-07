@@ -1,2 +1,2 @@
 """Scrapers package for Leiloes Brazil"""
-from scrapers.base_scraper import BaseScraper
+from .base_scraper import BaseScraper

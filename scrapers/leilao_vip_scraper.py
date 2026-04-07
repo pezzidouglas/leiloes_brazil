@@ -1,5 +1,5 @@
 """Scraper for Leilao VIP / HastaVip (leilaovip.com.br)"""
-from scrapers.base_scraper import BaseScraper
+from .base_scraper import BaseScraper
 import config
 
 class LeilaoVipScraper(BaseScraper):

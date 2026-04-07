@@ -1,5 +1,5 @@
 """Scraper for Zuk Leiloes (portalzuk.com.br) - Real Estate Focus"""
-from scrapers.base_scraper import BaseScraper
+from .base_scraper import BaseScraper
 import config
 
 

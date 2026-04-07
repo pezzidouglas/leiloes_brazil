@@ -1,5 +1,5 @@
 """Scraper for Mega Leiloes (megaleiloes.com.br)"""
-from scrapers.base_scraper import BaseScraper
+from .base_scraper import BaseScraper
 import config
 
 

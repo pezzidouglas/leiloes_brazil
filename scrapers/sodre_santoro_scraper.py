@@ -1,5 +1,5 @@
 """Scraper for Sodre Santoro (sodresantoro.com.br) - Vehicle Auctions"""
-from scrapers.base_scraper import BaseScraper
+from .base_scraper import BaseScraper
 import config
 
 class SodreSantoroScraper(BaseScraper):

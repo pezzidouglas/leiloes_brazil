@@ -7,7 +7,7 @@ Supports online and live (presencial) auctions.
 
 import logging
 
-from scrapers.base_scraper import BaseScraper
+from .base_scraper import BaseScraper
 import config
 
 logger = logging.getLogger(__name__)
@@ -26,15 +26,18 @@ class LeiloesBrasilScraper(BaseScraper):
         "DIVERSOS",
     ]
 
+    def __init__(self):
+        super().__init__("leiloes_brasil", self.BASE_URL)
+
     def scrape(self) -> list[dict]:
         logger.info("Starting Leilões Brasil scraper")
         self.results = []
 
-        for page in range(1, config.MAX_PAGES + 1):
+        for page in range(1, config.MAX_PAGES_PER_SOURCE + 1):
             try:
                 url = f"{self.SEARCH_URL}?page={page}"
-                resp = self._get(url)
-                soup = self._soup(resp.text)
+                resp = self._fetch(url)
+                soup = self._parse_html(resp.text)
                 items = soup.select(
                     "div.leilao-item, div.auction-card, div.card, "
                     "tr.auction-row, li.leilao"
