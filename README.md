@@ -65,6 +65,15 @@ A comprehensive web scraper and dashboard for Brazilian auctions (leilões). Scr
           streamlit run dashboard.py
           ```
 
+          ### 4. Generate static site (for Tiiny.host deployment)
+          ```bash
+          python generate_static_site.py
+          ```
+          This creates `docs/index.html` — a self-contained HTML dashboard with all data embedded.
+          Upload the `docs/` folder (or just `docs/index.html`) to [Tiiny.host](https://tiiny.host) to deploy.
+
+          > **Note**: The GitHub Actions workflow automatically regenerates the static site after each scrape run, so `docs/index.html` stays up to date.
+
           ## ⚙️ Configuration
 
           Edit `config.py` to customize:
