@@ -128,22 +128,4 @@ class MilaniLeiloesScraper(BaseScraper):
             return None
 
     def _infer_category(self, title):
-        """Infer category from item title keywords."""
-        lower = title.lower()
-        property_kw = ["apartamento", "casa", "terreno", "galpão", "galpao",
-                        "sala", "loja", "prédio", "predio", "imóvel", "imovel"]
-        vehicle_kw = ["carro", "moto", "veículo", "veiculo", "caminhão",
-                       "caminhao", "ônibus", "onibus", "van", "pickup"]
-        machine_kw = ["máquina", "maquina", "equipamento", "trator",
-                       "escavadeira", "empilhadeira"]
-
-        for kw in property_kw:
-            if kw in lower:
-                return "Imoveis"
-        for kw in vehicle_kw:
-            if kw in lower:
-                return "Veiculos"
-        for kw in machine_kw:
-            if kw in lower:
-                return "Maquinas"
-        return "Diversos"
+        return self.infer_category_from_title(title)
