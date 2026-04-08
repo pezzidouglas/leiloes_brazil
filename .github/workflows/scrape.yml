@@ -60,10 +60,14 @@ jobs:
             echo '```' >> "$GITHUB_STEP_SUMMARY"
           fi
 
+      - name: Generate static site for Tiiny deployment
+        run: |
+          python generate_static_site.py
+
       - name: Commit and push data
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git add data/
+          git add data/ docs/
           git diff --staged --quiet || git commit -m "Update auction data [skip ci]"
           git push
