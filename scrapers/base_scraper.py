@@ -225,7 +225,7 @@ class BaseScraper(ABC):
         for parent in element.parents:
             if parent.name in ('div', 'article', 'li', 'section', 'tr'):
                 # A "card" typically has a few direct child elements
-                children_count = len(parent.find_all(recursive=False))
+                children_count = len([c for c in parent.children if c.name])
                 if children_count >= 2:
                     return parent
         return element.parent
@@ -237,14 +237,13 @@ class BaseScraper(ABC):
         Tries heading tags, common class patterns, then falls back to
         the first <a> tag with meaningful text.
         """
-        import re as _re
 
         def _is_valid_title(text):
             """Return True if text looks like a real title, not a price/date."""
             if not text or len(text) < 3:
                 return False
-            # Skip text that is purely a price
-            cleaned = _re.sub(r"[R$\s.,\d]", "", text)
+            # Skip text that is purely a price (e.g. "R$ 100.000,00")
+            cleaned = re.sub(r"R\$|[\s.,\d]", "", text)
             if not cleaned:
                 return False
             return True
