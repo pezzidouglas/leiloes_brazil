@@ -19,6 +19,13 @@ class SoldScraper(BaseScraper):
         "tecnologia": "/categorias/tecnologia",
     }
 
+    CARD_SELECTORS = (
+        "[class*='card-lote'], [class*='card-item'], "
+        "[class*='lot-card'], [class*='offer-card'], "
+        "article[class*='card'], div[class*='auction-card']"
+    )
+    LINK_PATTERNS = ["/lote/", "/leilao/"]
+
     def __init__(self):
         super().__init__("sold", "https://www.sold.com.br")
 
@@ -41,10 +48,8 @@ class SoldScraper(BaseScraper):
                 )
                 soup = self._parse_html(html)
 
-                items = soup.select(
-                    "[class*='card-lote'], [class*='card-item'], "
-                    "[class*='lot-card'], [class*='offer-card'], "
-                    "article[class*='card'], div[class*='auction-card']"
+                items = self._select_items(
+                    soup, self.CARD_SELECTORS, self.LINK_PATTERNS
                 )
                 if not items:
                     break
@@ -66,6 +71,8 @@ class SoldScraper(BaseScraper):
                 "h3, h4, [class*='title'], [class*='nome'], [class*='name']"
             )
             title = title_el.get_text(strip=True) if title_el else None
+            if not title:
+                title = self.extract_title_from_element(item)
             if not title:
                 return None
 

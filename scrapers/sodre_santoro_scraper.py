@@ -20,6 +20,13 @@ class SodreSantoroScraper(BaseScraper):
         "materiais": "/materiais/lotes",
     }
 
+    CARD_SELECTORS = (
+        "[class*='vehicle-card'], [class*='lote-card'], "
+        "[class*='lot-card'], article[class*='card'], "
+        "div[class*='card-lote'], div[class*='auction-card']"
+    )
+    LINK_PATTERNS = ["/lote/", "/veiculo/", "/imovel/", "/leiloes/"]
+
     def __init__(self):
         super().__init__("sodre_santoro", "https://www.sodresantoro.com.br")
 
@@ -42,10 +49,8 @@ class SodreSantoroScraper(BaseScraper):
                 )
                 soup = self._parse_html(html)
 
-                items = soup.select(
-                    "[class*='vehicle-card'], [class*='lote-card'], "
-                    "[class*='lot-card'], article[class*='card'], "
-                    "div[class*='card-lote'], div[class*='auction-card']"
+                items = self._select_items(
+                    soup, self.CARD_SELECTORS, self.LINK_PATTERNS
                 )
                 if not items:
                     self.logger.info(f"No items on {segment_name} page {page}")
@@ -68,6 +73,8 @@ class SodreSantoroScraper(BaseScraper):
                 "h3, h4, [class*='titulo'], [class*='title'], [class*='vehicle-name'], [class*='nome']"
             )
             title = title_el.get_text(strip=True) if title_el else None
+            if not title:
+                title = self.extract_title_from_element(item)
             if not title:
                 return None
 

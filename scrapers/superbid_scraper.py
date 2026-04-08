@@ -20,6 +20,13 @@ class SuperbidScraper(BaseScraper):
         "animais": "/categorias/animais",
     }
 
+    CARD_SELECTORS = (
+        "[class*='card-lote'], [class*='card-item'], "
+        "[class*='lot-card'], [class*='offer-card'], "
+        "article[class*='card'], div[class*='auction-card']"
+    )
+    LINK_PATTERNS = ["/oferta/", "/lote/", "/lotes/"]
+
     def __init__(self):
         super().__init__("superbid", "https://www.superbid.net")
 
@@ -44,11 +51,8 @@ class SuperbidScraper(BaseScraper):
                 )
                 soup = self._parse_html(html)
 
-                # Try multiple possible card selectors (SPA - selectors may vary)
-                items = soup.select(
-                    "[class*='card-lote'], [class*='card-item'], "
-                    "[class*='lot-card'], [class*='offer-card'], "
-                    "article[class*='card'], div[class*='auction-card']"
+                items = self._select_items(
+                    soup, self.CARD_SELECTORS, self.LINK_PATTERNS
                 )
                 if not items:
                     self.logger.info(f"No items on {cat_slug} page {page}")
@@ -72,6 +76,8 @@ class SuperbidScraper(BaseScraper):
                 "h3, h4, [class*='title'], [class*='nome'], [class*='name']"
             )
             title = title_el.get_text(strip=True) if title_el else None
+            if not title:
+                title = self.extract_title_from_element(item)
             if not title:
                 return None
 
