@@ -12,6 +12,13 @@ class NucleoLeiloesScraper(BaseScraper):
     STATES = ["SP", "RJ", "MG", "BA", "PR", "RS", "SC", "GO", "PE", "CE",
               "DF", "PA", "MA", "MT", "MS", "ES", "PB", "RN", "AL", "PI"]
 
+    CARD_SELECTORS = (
+        "[class*='property-card'], [class*='card-imovel'], "
+        "[class*='lot-card'], [class*='auction-card'], "
+        "article[class*='card'], div[class*='leilao-item']"
+    )
+    LINK_PATTERNS = ["/imovel/", "/lote/", "/leilao/"]
+
     def __init__(self):
         super().__init__("nucleo_leiloes", "https://www.nucleoleiloes.com.br")
 
@@ -38,10 +45,8 @@ class NucleoLeiloesScraper(BaseScraper):
                 )
                 soup = self._parse_html(html)
 
-            items = soup.select(
-                "[class*='property-card'], [class*='card-imovel'], "
-                "[class*='lot-card'], [class*='auction-card'], "
-                "article[class*='card'], div[class*='leilao-item']"
+            items = self._select_items(
+                soup, self.CARD_SELECTORS, self.LINK_PATTERNS
             )
             if not items:
                 break
@@ -59,6 +64,8 @@ class NucleoLeiloesScraper(BaseScraper):
                 "h3, h4, h2, [class*='titulo'], [class*='title'], [class*='nome']"
             )
             title = title_el.get_text(strip=True) if title_el else None
+            if not title:
+                title = self.extract_title_from_element(item)
             if not title:
                 return None
 

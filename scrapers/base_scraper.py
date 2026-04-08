@@ -175,6 +175,99 @@ class BaseScraper(ABC):
         key = re.sub(r"[^a-z]", "", key)
         return config.CATEGORY_MAP.get(key, "Diversos")
 
+    # --- Adaptive item detection ---
+
+    def _select_items(self, soup, card_selectors, link_patterns=None):
+        """Select auction items from soup using card selectors with link-based fallback.
+
+        Args:
+            soup: BeautifulSoup object
+            card_selectors: CSS selector string for card elements
+            link_patterns: list of href substrings to match for fallback
+                           (e.g., ['/lote/', '/oferta/'])
+
+        Returns:
+            list of BeautifulSoup Tag elements
+        """
+        # First try the explicit card selectors
+        items = soup.select(card_selectors)
+        if items:
+            return items
+
+        # Fallback: detect items by link URL patterns
+        if not link_patterns:
+            return []
+
+        seen_hrefs = set()
+        seen_containers = set()
+        containers = []
+
+        for pattern in link_patterns:
+            for a_tag in soup.select(f"a[href*='{pattern}']"):
+                href = a_tag.get("href", "")
+                if not href or href in seen_hrefs:
+                    continue
+
+                seen_hrefs.add(href)
+
+                # Walk up to find the card-like container
+                container = self._find_card_container(a_tag)
+                container_id = id(container)
+                if container_id not in seen_containers:
+                    seen_containers.add(container_id)
+                    containers.append(container)
+
+        return containers
+
+    @staticmethod
+    def _find_card_container(element):
+        """Find the closest card-like ancestor of an element."""
+        for parent in element.parents:
+            if parent.name in ('div', 'article', 'li', 'section', 'tr'):
+                # A "card" typically has a few direct child elements
+                children_count = len([c for c in parent.children if c.name])
+                if children_count >= 2:
+                    return parent
+        return element.parent
+
+    @staticmethod
+    def extract_title_from_element(item):
+        """Try multiple strategies to extract a title from an element.
+
+        Tries heading tags, common class patterns, then falls back to
+        the first <a> tag with meaningful text.
+        """
+
+        def _is_valid_title(text):
+            """Return True if text looks like a real title, not a price/date."""
+            if not text or len(text) < 3:
+                return False
+            # Skip text that is purely a price (e.g. "R$ 100.000,00")
+            cleaned = re.sub(r"R\$|[\s.,\d]", "", text)
+            if not cleaned:
+                return False
+            return True
+
+        # Strategy 1: heading tags and common title classes
+        for selector in [
+            "h2", "h3", "h4",
+            "[class*='title']", "[class*='titulo']",
+            "[class*='nome']", "[class*='name']",
+        ]:
+            el = item.select_one(selector)
+            if el:
+                text = el.get_text(strip=True)
+                if _is_valid_title(text):
+                    return text
+
+        # Strategy 2: first <a> with meaningful text
+        for a_tag in item.select("a[href]"):
+            text = a_tag.get_text(strip=True)
+            if _is_valid_title(text) and len(text) >= 5:
+                return text
+
+        return None
+
     @abstractmethod
     def scrape(self):
         pass

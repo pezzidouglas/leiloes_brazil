@@ -16,6 +16,13 @@ class MapaDoLeilaoScraper(BaseScraper):
         "CE": "ceara", "DF": "distrito-federal", "PA": "para",
     }
 
+    CARD_SELECTORS = (
+        "[class*='card-leilao'], [class*='auction-card'], "
+        "[class*='lot-card'], [class*='property-card'], "
+        "article[class*='card'], div[class*='leilao-item']"
+    )
+    LINK_PATTERNS = ["/leilao/", "/leiloeiro/", "/lote/"]
+
     def __init__(self):
         super().__init__("mapa_do_leilao", "https://www.mapadoleilao.com.br")
 
@@ -41,10 +48,8 @@ class MapaDoLeilaoScraper(BaseScraper):
             )
             soup = self._parse_html(html)
 
-        items = soup.select(
-            "[class*='card-leilao'], [class*='auction-card'], "
-            "[class*='lot-card'], [class*='property-card'], "
-            "article[class*='card'], div[class*='leilao-item']"
+        items = self._select_items(
+            soup, self.CARD_SELECTORS, self.LINK_PATTERNS
         )
         if not items:
             self.logger.info(f"No items for {state_code}")
@@ -63,6 +68,8 @@ class MapaDoLeilaoScraper(BaseScraper):
                 "h3, h4, h2, [class*='titulo'], [class*='title'], [class*='nome']"
             )
             title = title_el.get_text(strip=True) if title_el else None
+            if not title:
+                title = self.extract_title_from_element(item)
             if not title:
                 return None
 

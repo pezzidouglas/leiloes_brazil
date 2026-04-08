@@ -19,6 +19,13 @@ class LeilaoVipScraper(BaseScraper):
         "RS": 22, "SC": 25, "GO": 9, "PE": 16, "CE": 6,
     }
 
+    CARD_SELECTORS = (
+        "[class*='lot-card'], [class*='card'], article, "
+        "[class*='item-lote'], [class*='anuncio-card'], "
+        "div[class*='leilao'], div[class*='lote']"
+    )
+    LINK_PATTERNS = ["/anuncio/", "/lote/", "/evento/"]
+
     def __init__(self):
         super().__init__("leilao_vip", "https://www.leilaovip.com.br")
 
@@ -49,10 +56,8 @@ class LeilaoVipScraper(BaseScraper):
 
         soup = self._parse_html(html)
 
-        items = soup.select(
-            "[class*='lot-card'], [class*='card'], article, "
-            "[class*='item-lote'], [class*='anuncio-card'], "
-            "div[class*='leilao'], div[class*='lote']"
+        items = self._select_items(
+            soup, self.CARD_SELECTORS, self.LINK_PATTERNS
         )
         if not items:
             self.logger.info(f"No items for state {state_name}")
@@ -71,6 +76,8 @@ class LeilaoVipScraper(BaseScraper):
                 "h3, h4, [class*='titulo'], [class*='title'], [class*='nome']"
             )
             title = title_el.get_text(strip=True) if title_el else None
+            if not title:
+                title = self.extract_title_from_element(item)
             if not title:
                 return None
 

@@ -17,6 +17,13 @@ class ZukScraper(BaseScraper):
     # Top states by auction volume
     STATES = ["sp", "rj", "mg", "ba", "pr", "rs", "sc", "go", "pe", "ce"]
 
+    CARD_SELECTORS = (
+        "[class*='property-card'], [class*='card-imovel'], "
+        "[class*='lot-item'], article[class*='card'], "
+        "div[class*='auction-card'], div[class*='leilao-card']"
+    )
+    LINK_PATTERNS = ["/leilao-de-imoveis/", "/imovel/", "/leilao-judicial/"]
+
     def __init__(self):
         super().__init__("zuk", "https://www.portalzuk.com.br")
 
@@ -38,11 +45,8 @@ class ZukScraper(BaseScraper):
             )
             soup = self._parse_html(html)
 
-            # Try multiple card selectors
-            items = soup.select(
-                "[class*='property-card'], [class*='card-imovel'], "
-                "[class*='lot-item'], article[class*='card'], "
-                "div[class*='auction-card'], div[class*='leilao-card']"
+            items = self._select_items(
+                soup, self.CARD_SELECTORS, self.LINK_PATTERNS
             )
             if not items:
                 self.logger.info(f"No items for state {state}")
@@ -64,6 +68,8 @@ class ZukScraper(BaseScraper):
                 "h3, h4, [class*='title'], [class*='titulo'], [class*='nome']"
             )
             title = title_el.get_text(strip=True) if title_el else None
+            if not title:
+                title = self.extract_title_from_element(item)
             if not title:
                 return None
 
