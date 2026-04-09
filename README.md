@@ -1,92 +1,102 @@
 # 🇧🇷 Leilões Brazil - Auction Scraper & Dashboard
 
-A comprehensive web scraper and dashboard for Brazilian auctions (leilões). Scrapes data from major auction platforms across Brazil and presents it in a beautiful, interactive Streamlit dashboard.
+A comprehensive web scraper and dashboard for Brazilian auctions (leilões). Scrapes data from major auction platforms across Brazil and presents it in a beautiful, interactive static dashboard.
+
+## 🌐 Live Dashboard
+
+**Access the live dashboard here:**
+👉 **[https://pezzidouglas.github.io/leiloes_brazil/](https://pezzidouglas.github.io/leiloes_brazil/)**
+
+The dashboard is automatically updated daily via GitHub Actions and deployed to GitHub Pages. No login or installation required — just open the link in your browser.
 
 ## 🎯 Features
 
 - **Multi-source scraping**: Collects auction data from 6+ major Brazilian auction platforms
-- - **Unified data format**: Normalizes data from different sources into a consistent schema
-  - - **Interactive dashboard**: Filter by category, state, price range, and auction date
-    - - **Auto-refresh**: GitHub Actions workflow runs daily to keep data fresh
-      - - **Export**: Download filtered results as CSV
-       
-        - ## 📊 Supported Auction Sources
-       
-        - | Source | URL | Categories |
-        - |--------|-----|------------|
-        - | Superbid | superbid.net | Vehicles, Real Estate, Industrial, Rural |
-        - | Mega Leilões | megaleiloes.com.br | Real Estate, Vehicles, Consumer Goods |
-        - | Zuk Leilões | portalzuk.com.br | Real Estate (Judicial & Extrajudicial) |
-        - | Leilões Brasil | leiloesbrasil.com.br | Vehicles, Real Estate, Judicial |
-        - | Sodré Santoro | sodresantoro.com.br | Vehicles, Electronics, Furniture |
-        - | Leilão VIP | leilaovip.com.br | Real Estate, Vehicles, Materials |
-       
-        - ## 🏗️ Project Structure
-       
-        - ```
-          leiloes_brazil/
-          ├── README.md
-          ├── requirements.txt
-          ├── config.py                # Configuration & constants
-          ├── scrapers/
-          │   ├── __init__.py
-          │   ├── base_scraper.py      # Abstract base scraper class
-          │   ├── superbid_scraper.py  # Superbid Exchange scraper
-          │   ├── mega_leiloes_scraper.py  # Mega Leilões scraper
-          │   ├── zuk_scraper.py       # Zuk Portal scraper
-          │   ├── leiloes_brasil_scraper.py  # Leilões Brasil scraper
-          │   ├── sodre_santoro_scraper.py   # Sodré Santoro scraper
-          │   └── leilao_vip_scraper.py     # Leilão VIP scraper
-          ├── data/
-          │   ├── raw/                 # Raw scraped data per source
-          │   └── processed/           # Unified processed data
-          ├── pipeline.py              # Data processing pipeline
-          ├── run_scrapers.py          # Main scraper orchestrator
-          ├── dashboard.py             # Streamlit dashboard
-          └── .github/
-              └── workflows/
-                  └── scrape.yml       # Daily scraping workflow
-          ```
+- **Unified data format**: Normalizes data from different sources into a consistent schema
+- **Interactive dashboard**: Filter by category, state, price range, and auction date
+- **Auto-refresh**: GitHub Actions workflow runs daily to keep data fresh
+- **Export**: Download filtered results as CSV
 
-          ## 🚀 Quick Start
+## 📊 Supported Auction Sources
 
-          ### 1. Install dependencies
-          ```bash
-          pip install -r requirements.txt
-          ```
+| Source | URL | Categories |
+|--------|-----|------------|
+| Superbid | superbid.net | Vehicles, Real Estate, Industrial, Rural |
+| Mega Leilões | megaleiloes.com.br | Real Estate, Vehicles, Consumer Goods |
+| Zuk Leilões | portalzuk.com.br | Real Estate (Judicial & Extrajudicial) |
+| Leilões Brasil | leiloesbrasil.com.br | Vehicles, Real Estate, Judicial |
+| Sodré Santoro | sodresantoro.com.br | Vehicles, Electronics, Furniture |
+| Leilão VIP | leilaovip.com.br | Real Estate, Vehicles, Materials |
 
-          ### 2. Run the scrapers
-          ```bash
-          python run_scrapers.py
-          ```
+## 🏗️ Project Structure
 
-          ### 3. Launch the dashboard
-          ```bash
-          streamlit run dashboard.py
-          ```
+```
+leiloes_brazil/
+├── README.md
+├── requirements.txt
+├── config.py                # Configuration & constants
+├── scrapers/
+│   ├── __init__.py
+│   ├── base_scraper.py      # Abstract base scraper class
+│   ├── superbid_scraper.py  # Superbid Exchange scraper
+│   ├── mega_leiloes_scraper.py  # Mega Leilões scraper
+│   ├── zuk_scraper.py       # Zuk Portal scraper
+│   ├── leiloes_brasil_scraper.py  # Leilões Brasil scraper
+│   ├── sodre_santoro_scraper.py   # Sodré Santoro scraper
+│   └── leilao_vip_scraper.py     # Leilão VIP scraper
+├── data/
+│   ├── raw/                 # Raw scraped data per source
+│   └── processed/           # Unified processed data
+├── docs/
+│   └── index.html           # Static dashboard (deployed to GitHub Pages)
+├── pipeline.py              # Data processing pipeline
+├── run_scrapers.py          # Main scraper orchestrator
+├── generate_static_site.py  # Static site generator
+├── dashboard.py             # Streamlit dashboard
+└── .github/
+    └── workflows/
+        ├── scrape.yml       # Daily scraping workflow
+        └── deploy-pages.yml # GitHub Pages deployment
+```
 
-          ### 4. Generate static site (for Tiiny.host deployment)
-          ```bash
-          python generate_static_site.py
-          ```
-          This creates `docs/index.html` — a self-contained HTML dashboard with all data embedded.
-          Upload the `docs/` folder (or just `docs/index.html`) to [Tiiny.host](https://tiiny.host) to deploy.
+## 🚀 Quick Start (Local)
 
-          > **Note**: The GitHub Actions workflow automatically regenerates the static site after each scrape run, so `docs/index.html` stays up to date.
+### 1. Install dependencies
+```bash
+pip install -r requirements.txt
+```
 
-          ## ⚙️ Configuration
+### 2. Run the scrapers
+```bash
+python run_scrapers.py
+```
 
-          Edit `config.py` to customize:
-          - Which scrapers to enable/disable
-          - - Number of pages to scrape per source
-            - - Request delays and timeouts
-              - - Output data format
-               
-                - ## 📦 Requirements
-               
-                - - Python 3.9+
-                  - - See `requirements.txt` for full dependency list
-                   
-                    - ## 📄 License
-                   
-                    - MIT License
+### 3. Launch the dashboard
+```bash
+streamlit run dashboard.py
+```
+
+### 4. Generate static site
+```bash
+python generate_static_site.py
+```
+This creates `docs/index.html` — a self-contained HTML dashboard with all data embedded.
+
+> **Note**: The GitHub Actions workflow automatically regenerates the static site after each scrape run and redeploys it to GitHub Pages, so the live dashboard stays up to date.
+
+## ⚙️ Configuration
+
+Edit `config.py` to customize:
+- Which scrapers to enable/disable
+- Number of pages to scrape per source
+- Request delays and timeouts
+- Output data format
+
+## 📦 Requirements
+
+- Python 3.9+
+- See `requirements.txt` for full dependency list
+
+## 📄 License
+
+MIT License
