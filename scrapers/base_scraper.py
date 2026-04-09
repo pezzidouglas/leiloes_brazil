@@ -268,6 +268,37 @@ class BaseScraper(ABC):
 
         return None
 
+    @staticmethod
+    def infer_category_from_title(title):
+        """Infer auction category from item title keywords.
+
+        Returns a normalized category string suitable for the output schema.
+        """
+        lower = title.lower()
+        property_kw = [
+            "apartamento", "casa", "terreno", "galpão", "galpao",
+            "sala", "loja", "prédio", "predio", "imóvel", "imovel", "sítio", "sitio",
+        ]
+        vehicle_kw = [
+            "carro", "moto", "veículo", "veiculo", "caminhão",
+            "caminhao", "ônibus", "onibus", "van", "pickup",
+        ]
+        machine_kw = [
+            "máquina", "maquina", "equipamento", "trator",
+            "escavadeira", "empilhadeira",
+        ]
+
+        for kw in property_kw:
+            if kw in lower:
+                return "Imoveis"
+        for kw in vehicle_kw:
+            if kw in lower:
+                return "Veiculos"
+        for kw in machine_kw:
+            if kw in lower:
+                return "Maquinas"
+        return "Diversos"
+
     @abstractmethod
     def scrape(self):
         pass
