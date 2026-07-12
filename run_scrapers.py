@@ -34,6 +34,7 @@ def run_all_scrapers():
     logger.info(f"Starting scraper run at {datetime.now().isoformat()}")
     logger.info(f"Enabled scrapers: {config.ENABLED_SCRAPERS}")
     results_summary = {}
+    failed_scrapers = []
     for scraper_name in config.ENABLED_SCRAPERS:
         if scraper_name not in SCRAPER_MAP:
             logger.warning(f"Unknown scraper: {scraper_name}")
@@ -53,14 +54,19 @@ def run_all_scrapers():
         except Exception as e:
             logger.error(f"Failed to run {scraper_name}: {e}")
             results_summary[scraper_name] = 0
+            failed_scrapers.append(scraper_name)
     # Run pipeline
     logger.info(f"\n{'='*50}")
     logger.info("Running data pipeline...")
     logger.info(f"{'='*50}")
+    pipeline_ok = True
     try:
-        run_pipeline()
+        pipeline_result = run_pipeline()
+        if pipeline_result is None:
+            pipeline_ok = False
     except Exception as e:
         logger.error(f"Pipeline error: {e}")
+        pipeline_ok = False
     # Print final summary
     logger.info(f"\n{'='*50}")
     logger.info("FINAL SUMMARY")
@@ -70,8 +76,17 @@ def run_all_scrapers():
         logger.info(f"  {name}: {count} items")
         total += count
     logger.info(f"  TOTAL: {total} items")
+    if failed_scrapers:
+        logger.warning("Scrapers with errors: %s", ", ".join(failed_scrapers))
     logger.info(f"Completed at {datetime.now().isoformat()}")
+    if total == 0:
+        logger.error("No auction records were collected; refusing to report a successful run.")
+        return 1
+    if not pipeline_ok:
+        logger.error("Data processing failed; refusing to report a successful run.")
+        return 1
+    return 0
 
 
 if __name__ == "__main__":
-    run_all_scrapers()
+    raise SystemExit(run_all_scrapers())
