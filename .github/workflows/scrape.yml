@@ -41,9 +41,8 @@ jobs:
       - name: Run scrapers
         id: run_scrapers
         run: |
+          set -o pipefail
           python run_scrapers.py 2>&1 | tee /tmp/scraper_output.txt
-          echo "exit_code=${PIPESTATUS[0]}" >> "$GITHUB_OUTPUT"
-        continue-on-error: true
         timeout-minutes: 45
 
       - name: Generate job summary
