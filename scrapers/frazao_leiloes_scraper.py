@@ -13,13 +13,6 @@ class FrazaoLeiloesScraper(BaseScraper):
     SEGMENTS = ["Residencial", "Comercial", "Terreno", "Rural"]
     STATES = ["SP", "RJ", "MG", "BA", "PR", "RS", "SC", "GO", "PE", "CE", "DF"]
 
-    CARD_SELECTORS = (
-        "[class*='card-lote'], [class*='lot-card'], "
-        "[class*='auction-card'], article[class*='card'], "
-        "div[class*='leilao-item'], div[class*='property-card']"
-    )
-    LINK_PATTERNS = ["/sale/", "/lote/", "/imovel/"]
-
     def __init__(self):
         super().__init__("frazao_leiloes", "https://www.frazaoleiloes.com.br")
 
@@ -47,8 +40,10 @@ class FrazaoLeiloesScraper(BaseScraper):
                 )
                 soup = self._parse_html(html)
 
-            items = self._select_items(
-                soup, self.CARD_SELECTORS, self.LINK_PATTERNS
+            items = soup.select(
+                "[class*='card-lote'], [class*='lot-card'], "
+                "[class*='auction-card'], article[class*='card'], "
+                "div[class*='leilao-item'], div[class*='property-card']"
             )
             if not items:
                 break
@@ -66,8 +61,6 @@ class FrazaoLeiloesScraper(BaseScraper):
                 "h3, h4, h2, [class*='titulo'], [class*='title'], [class*='nome']"
             )
             title = title_el.get_text(strip=True) if title_el else None
-            if not title:
-                title = self.extract_title_from_element(item)
             if not title:
                 return None
 

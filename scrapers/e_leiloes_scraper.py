@@ -16,13 +16,6 @@ class ELeiloesScraper(BaseScraper):
         "maquinas": "/lojas?tipoLeilao=maquinas",
     }
 
-    CARD_SELECTORS = (
-        "[class*='card-lote'], [class*='lot-card'], "
-        "[class*='auction-card'], article[class*='card'], "
-        "div[class*='leilao-item'], div[class*='product-card']"
-    )
-    LINK_PATTERNS = ["/leilao/", "/evento/", "/lote/"]
-
     def __init__(self):
         super().__init__("e_leiloes", "https://www.e-leiloes.com.br")
 
@@ -49,8 +42,10 @@ class ELeiloesScraper(BaseScraper):
                 )
                 soup = self._parse_html(html)
 
-            items = self._select_items(
-                soup, self.CARD_SELECTORS, self.LINK_PATTERNS
+            items = soup.select(
+                "[class*='card-lote'], [class*='lot-card'], "
+                "[class*='auction-card'], article[class*='card'], "
+                "div[class*='leilao-item'], div[class*='product-card']"
             )
             if not items:
                 break
@@ -68,8 +63,6 @@ class ELeiloesScraper(BaseScraper):
                 "h3, h4, h2, [class*='titulo'], [class*='title'], [class*='nome']"
             )
             title = title_el.get_text(strip=True) if title_el else None
-            if not title:
-                title = self.extract_title_from_element(item)
             if not title:
                 return None
 
