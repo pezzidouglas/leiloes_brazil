@@ -22,6 +22,11 @@ SCRAPER_MAP = {
     "sold": ("scrapers.sold_scraper", "SoldScraper"),
     "nucleo_leiloes": ("scrapers.nucleo_leiloes_scraper", "NucleoLeiloesScraper"),
     "mapa_do_leilao": ("scrapers.mapa_do_leilao_scraper", "MapaDoLeilaoScraper"),
+    "freitas_leiloeiro": ("scrapers.freitas_leiloeiro_scraper", "FreitasLeiloeiroScraper"),
+    "lance_no_leilao": ("scrapers.lance_no_leilao_scraper", "LanceNoLeilaoScraper"),
+    "pestana_leiloes": ("scrapers.pestana_leiloes_scraper", "PestanaLeiloesScraper"),
+    "milani_leiloes": ("scrapers.milani_leiloes_scraper", "MilaniLeiloesScraper"),
+    "grupo_lance": ("scrapers.grupo_lance_scraper", "GrupoLanceScraper"),
 }
 
 

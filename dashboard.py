@@ -14,7 +14,8 @@ st.set_page_config(page_title="Leiloes Brazil Dashboard", page_icon="🇧🇷", 
 CATEGORIES = ["Imoveis", "Veiculos", "Maquinas", "Bens de Consumo", "Rural", "Diversos"]
 STATES = ["SP","RJ","MG","BA","PR","RS","SC","GO","PE","CE","PA","MA","MT","MS","DF","ES","PB","RN","AL","PI","SE","RO","TO","AC","AP","AM","RR"]
 SOURCES = ["Superbid", "Mega Leiloes", "Zuk", "Leiloes Brasil", "Sodre Santoro", "Leilao VIP",
-    "Leiloes Judiciais", "E-Leiloes", "Frazao Leiloes", "Sold", "Nucleo Leiloes", "Mapa do Leilao"]
+    "Leiloes Judiciais", "E-Leiloes", "Frazao Leiloes", "Sold", "Nucleo Leiloes", "Mapa do Leilao",
+    "Freitas Leiloeiro", "Lance no Leilao", "Pestana Leiloes", "Milani Leiloes", "Grupo Lance"]
 TYPES = ["Judicial", "Extrajudicial", "Venda Direta", "Corporativo"]
 CITIES = {"SP": ["Sao Paulo","Campinas","Santos","Ribeirao Preto","Sorocaba"],
     "RJ": ["Rio de Janeiro","Niteroi","Petropolis","Volta Redonda"],

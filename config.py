@@ -26,6 +26,7 @@ USER_AGENTS = [
 ENABLED_SCRAPERS = [
     "superbid", "mega_leiloes", "zuk", "leiloes_brasil", "sodre_santoro", "leilao_vip",
     "leiloes_judiciais", "e_leiloes", "frazao_leiloes", "sold", "nucleo_leiloes", "mapa_do_leilao",
+    "freitas_leiloeiro", "lance_no_leilao", "pestana_leiloes", "milani_leiloes", "grupo_lance",
 ]
 
 CATEGORY_MAP = {
