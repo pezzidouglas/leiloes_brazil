@@ -1,6 +1,5 @@
 """Main orchestrator to run all scrapers and pipeline."""
 import logging
-import time
 from datetime import datetime
 
 import config
@@ -31,47 +30,67 @@ SCRAPER_MAP = {
 
 
 def run_all_scrapers():
-    logger.info(f"Starting scraper run at {datetime.now().isoformat()}")
-    logger.info(f"Enabled scrapers: {config.ENABLED_SCRAPERS}")
+    logger.info("Starting scraper run at %s", datetime.now().isoformat())
+    logger.info("Enabled scrapers: %s", config.ENABLED_SCRAPERS)
     results_summary = {}
+    failed_scrapers = []
+
     for scraper_name in config.ENABLED_SCRAPERS:
         if scraper_name not in SCRAPER_MAP:
-            logger.warning(f"Unknown scraper: {scraper_name}")
+            logger.warning("Unknown scraper: %s", scraper_name)
+            failed_scrapers.append(scraper_name)
             continue
+
         module_path, class_name = SCRAPER_MAP[scraper_name]
-        logger.info(f"\n{'='*50}")
-        logger.info(f"Running: {scraper_name}")
-        logger.info(f"{'='*50}")
+        logger.info("\n%s", "=" * 50)
+        logger.info("Running: %s", scraper_name)
+        logger.info("%s", "=" * 50)
         try:
             import importlib
+
             module = importlib.import_module(module_path)
             scraper_class = getattr(module, class_name)
             scraper = scraper_class()
             results = scraper.run()
             results_summary[scraper_name] = len(results)
-            logger.info(f"{scraper_name}: {len(results)} items collected")
-        except Exception as e:
-            logger.error(f"Failed to run {scraper_name}: {e}")
+            logger.info("%s: %s items collected", scraper_name, len(results))
+        except Exception as exc:
+            logger.error("Failed to run %s: %s", scraper_name, exc)
             results_summary[scraper_name] = 0
-    # Run pipeline
-    logger.info(f"\n{'='*50}")
+            failed_scrapers.append(scraper_name)
+
+    logger.info("\n%s", "=" * 50)
     logger.info("Running data pipeline...")
-    logger.info(f"{'='*50}")
+    logger.info("%s", "=" * 50)
+    pipeline_ok = True
     try:
-        run_pipeline()
-    except Exception as e:
-        logger.error(f"Pipeline error: {e}")
-    # Print final summary
-    logger.info(f"\n{'='*50}")
+        pipeline_result = run_pipeline()
+        if pipeline_result is None:
+            pipeline_ok = False
+    except Exception as exc:
+        logger.error("Pipeline error: %s", exc)
+        pipeline_ok = False
+
+    logger.info("\n%s", "=" * 50)
     logger.info("FINAL SUMMARY")
-    logger.info(f"{'='*50}")
+    logger.info("%s", "=" * 50)
     total = 0
     for name, count in results_summary.items():
-        logger.info(f"  {name}: {count} items")
+        logger.info("  %s: %s items", name, count)
         total += count
-    logger.info(f"  TOTAL: {total} items")
-    logger.info(f"Completed at {datetime.now().isoformat()}")
+    logger.info("  TOTAL: %s items", total)
+    if failed_scrapers:
+        logger.warning("Scrapers with errors: %s", ", ".join(failed_scrapers))
+    logger.info("Completed at %s", datetime.now().isoformat())
+
+    if total == 0:
+        logger.error("No auction records were collected; refusing to report a successful run.")
+        return 1
+    if not pipeline_ok:
+        logger.error("Data processing failed; refusing to report a successful run.")
+        return 1
+    return 0
 
 
 if __name__ == "__main__":
-    run_all_scrapers()
+    raise SystemExit(run_all_scrapers())
