@@ -50,10 +50,14 @@ jobs:
           if-no-files-found: warn
           retention-days: 3
 
+      - name: Regenerate static dashboard
+        run: |
+          python generate_static_site.py
+
       - name: Commit and push data
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git add data/
+          git add data/ docs/
           git diff --staged --quiet || git commit -m "Update auction data [skip ci]"
           git push
